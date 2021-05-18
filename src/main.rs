@@ -256,7 +256,7 @@ fn main() {
     let text_generic=SingleGen::<String>("double bmrxntfj".to_string());
     println!("text_generic::<String> value is {:?}",text_generic);
     let text_generic=SingleGen("double bmrxntfj");
-    println!("text_generic(\"\") value is {:?}",text_generic);
+    println!("text_generic(\"\") value is {:?}",text_generic); 
 
     let color=Color::RGB(200,122,40);
     match color{
