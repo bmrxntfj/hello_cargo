@@ -2,6 +2,10 @@ use std::fmt;
 use std::mem;
 use std::io;
 use rand::Rng;
+use std::io::prelude::*;
+use std::net::TcpListener;
+use std::net::TcpStream;
+use std::fs;
 use std::cmp::Ordering;
 use std::convert::{
     From,
@@ -10,6 +14,8 @@ use std::convert::{
 };
 
 mod cypto;
+mod threadpool;
+mod thread;
 
 #[derive(Debug)]
 struct Person<'a>{
@@ -88,6 +94,16 @@ struct SingleGen<T>(T);
 #[warn(unused_doc_comments)]
 #[warn(unused_labels)]
 fn main() {
+    let tcplistener=TcpListener::bind("127.0.0.1:8777").unwrap();
+    //let pool = thread::inaccessible::ThreadPool::new(4);
+    let pool = threadpool::ThreadPool::new(4);
+    for tcpstream in tcplistener.incoming(){
+        let mut stream=tcpstream.unwrap();
+        pool.execute(|| {
+            handle_connection(stream);
+        });
+        
+    }
     let unit=();
     println!("unit is {:?}",unit);
     let bmrxntfj=Person{name:"bmrxntfj",age:20};
@@ -336,6 +352,30 @@ fn main() {
 
     fn noreturn()->!{
         panic!("no value to return.");
+    }
+
+    fn handle_connection(mut stream:TcpStream){
+        let rnd_number=rand::thread_rng().gen_range(0,10);
+        let (status_line, filename) = if rnd_number/2==0 {
+            ("HTTP/1.1 200 OK", "hello.html")
+        } else {
+            ("HTTP/1.1 404 NOT FOUND", "404.html")
+        };
+
+        let mut buffer=[0;1024];
+        stream.read(&mut buffer).unwrap();
+        println!("request:{}",String::from_utf8_lossy(&buffer[..]));
+        //let responseText="HTTP/1.1 200 OK\r\n\r\n";
+        let contents = fs::read_to_string(filename).unwrap();
+
+        let response = format!(
+            "{}\r\nContent-Length: {}\r\n\r\n{}",
+            status_line,
+            contents.len(),
+            contents
+        );
+        stream.write(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
     }
 }
 
